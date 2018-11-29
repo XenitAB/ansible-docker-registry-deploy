@@ -1,0 +1,76 @@
+- name: Install pyOpenSSL
+  pip:
+    name: pyOpenSSL
+    state: latest
+
+- name: Create auth directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+    recurse: yes
+  loop:
+  - "{{ authDirectory }}"
+  - "{{ authDirectory }}/pub"
+  - "{{ authDirectory }}/priv"
+  - "/var/log/{{ authContainerName }}"
+
+- name: Include user management task
+  include_tasks: auth_users.yml
+
+- name: Generate auth private key
+  openssl_privatekey:
+    path: "{{ authDirectory }}/priv/auth.key"
+  register: authSslKey
+
+- name: Generate auth csr
+  openssl_csr:
+    path: "{{ authDirectory }}/pub/auth.csr"
+    privatekey_path: "{{ authDirectory }}/priv/auth.key"
+    common_name: "registry auth server - {{ environmentShort }}"
+  register: authSslCsr
+
+- name: Generate auth certificate
+  openssl_certificate:
+    path: "{{ authDirectory }}/pub/auth.crt"
+    privatekey_path: "{{ authDirectory }}/priv/auth.key"
+    csr_path: "{{ authDirectory }}/pub/auth.csr"
+    provider: selfsigned
+  register: authSslCert
+
+- name: Create auth service file
+  template:
+    src: auth.service.j2
+    dest: "/etc/systemd/system/{{ authContainerName }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  register: authServiceFile
+
+- name: Create auth_config.yml
+  template:
+    src: auth_config.yml.j2
+    dest: "{{ authDirectory }}/auth_config.yml"
+    owner: root
+    group: root
+    mode: 0644
+  register: authConfFile
+
+- name: Enable auth service
+  service:
+    daemon_reload: yes
+    name: "{{ authContainerName }}"
+    state: started
+    enabled: yes
+  register: authService
+
+- name: Restart auth service if changed
+  service:
+    daemon_reload: yes
+    name: "{{ authContainerName }}"
+    state: restarted
+  when:
+  - authService.changed == false
+  - authServiceFile.changed or authConfFile.changed or authSslCert.changed

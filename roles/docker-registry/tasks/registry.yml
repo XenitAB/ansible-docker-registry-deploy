@@ -1,0 +1,61 @@
+- name: Set azureStorage if it exists for localhost
+  set_fact:
+    azureStorage: "{{ hostvars['localhost']['azureStorage'] }}"
+  when: hostvars['localhost']['azureStorage'] is defined
+
+- name: Create registry service file
+  template:
+    src: registry.service.j2
+    dest: "/etc/systemd/system/{{ registryContainerName }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  register: registryServiceFile
+
+- name: Create registry storage location directory
+  file:
+    path: "{{ registryStorageLocation }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+    recurse: yes
+  when: azureStorage is undefined
+
+- name: Create registry config location directory
+  file:
+    path: "{{ registryConfigLocation }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+    recurse: yes
+
+- name: Include registry http secret management task
+  include_tasks: registry_http_secret.yml
+
+- name: Create registry_config.yml
+  template:
+    src: registry_config.yml.j2
+    dest: "{{ registryConfigLocation }}/config.yml"
+    owner: root
+    group: root
+    mode: 0644
+  register: registryConfFile
+
+- name: Enable registry service
+  service:
+    daemon_reload: yes
+    name: "{{ registryContainerName }}"
+    state: started
+    enabled: yes
+  register: registryService
+
+- name: Restart registry service if changed
+  service:
+    daemon_reload: yes
+    name: "{{ registryContainerName }}"
+    state: restarted
+  when:
+  - registryService.changed == false
+  - registryServiceFile.changed or registryConfFile.changed

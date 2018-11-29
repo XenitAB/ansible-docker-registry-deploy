@@ -1,0 +1,8 @@
+environment: qualityassurance
+environmentShort: qa
+nodeCount: 1
+vnetRgName: <Virtual Network Resource Group Name>
+vnetName: <Virtual Network Name>
+subnetName: <Subnet Name>
+osDiskSize: 32
+vmSize: Standard_DS2_v2

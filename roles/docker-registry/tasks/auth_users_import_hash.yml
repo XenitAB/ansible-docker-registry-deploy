@@ -1,0 +1,23 @@
+- name: Fetch password files
+  fetch:
+    fail_on_missing: yes
+    flat: yes
+    src: "{{ authDirectory }}/{{ item.name }}_hash"
+    dest: "/tmp/{{ item.name }}_hash"
+  loop: "{{ authUsers }}"
+
+- name: Set fact for user hash passwords
+  no_log: true
+  set_fact:
+    authUserHashPasswords: "{{ authUserHashPasswords | default([]) + [ (item | combine({'hashPassword': hashPassword})) ]}}"
+  vars:
+    fileName: "/tmp/{{ item.name }}_hash"
+    hashPassword: "{{ lookup('file', fileName) }}"
+  loop: "{{ authUsers }}"
+
+- name: Delete password files
+  delegate_to: localhost
+  file:
+    state: absent
+    path: "/tmp/{{ item.name }}_hash"
+  loop: "{{ authUsers }}"

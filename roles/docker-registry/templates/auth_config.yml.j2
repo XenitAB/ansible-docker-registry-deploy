@@ -1,0 +1,21 @@
+server:
+  addr: :5001
+
+token:
+  issuer: "{{ environmentShort }}"
+  expiration: 900
+  certificate: /config/pub/auth.crt
+  key: /config/priv/auth.key
+
+users:
+{% for user in authUserHashPasswords %}
+  "{{ user.name }}":
+    password: "{{ user.hashPassword }}"
+{% endfor %}
+
+acl:
+{% for user in authUserHashPasswords %}
+  - match: {account: "{{ user.name }}"}
+    actions: {{ user.actions | to_json }}
+    comment: "{{ user.comment }}"
+{% endfor %}

@@ -1,0 +1,16 @@
+[Unit]
+Description={{ registryContainerName }}
+After=docker.service network.target
+Requires=docker.service network.target
+ 
+[Service]
+Restart=always
+RestartSec=10s
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill {{ registryContainerName }}
+ExecStartPre=-/usr/bin/docker rm {{ registryContainerName }}
+ExecStartPre=/usr/bin/docker pull registry:2
+ExecStart=/usr/bin/docker run --network={{ dockerNetworkName }} --name {{ registryContainerName }} -v {{ authDirectory }}/pub:/auth_config:ro {% if azureStorage is undefined %}-v {{ registryStorageLocation }}:/var/lib/registry{% endif %} -v {{ registryConfigLocation }}/config.yml:/etc/docker/registry/config.yml registry:2
+ 
+[Install]
+WantedBy=multi-user.target

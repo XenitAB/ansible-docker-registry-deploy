@@ -1,0 +1,25 @@
+[all]
+localhost ansible_connection=local
+
+[azure:children]
+azure-dev
+azure-qa
+azure-prod
+
+[azure-dev]
+localhost
+
+[azure-qa]
+
+[azure-prod]
+
+[registry:children]
+registry-dev
+registry-qa
+registry-prod
+
+[registry-dev]
+
+[registry-qa]
+
+[registry-prod]

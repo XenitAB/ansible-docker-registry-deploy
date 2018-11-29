@@ -1,0 +1,25 @@
+- name: Generate nginx private key
+  openssl_privatekey:
+    path: "/etc/nginx/nginx.key"
+  register: nginxSslKey
+
+- name: Generate nginx csr
+  openssl_csr:
+    path: "/etc/nginx/nginx.csr"
+    privatekey_path: "/etc/nginx/nginx.key"
+    common_name: "{{ nginxConfig.fqdn }}"
+    subject_alt_name: "DNS:{{ nginxConfig.fqdn }}"
+    country_name: "{{ nginxConfig.country_name }}"
+    state_or_province_name: "{{ nginxConfig.state_or_province_name }}"
+    locality_name: "{{ nginxConfig.locality_name }}"
+    organization_name: "{{ nginxConfig.organization_name }}"
+    organizational_unit_name: "{{ nginxConfig.organizational_unit_name }}"
+  register: nginxSslCsr
+
+- name: Generate nginx certificate
+  openssl_certificate:
+    path: "/etc/nginx/nginx.crt"
+    privatekey_path: "/etc/nginx/nginx.key"
+    csr_path: "/etc/nginx/nginx.csr"
+    provider: selfsigned
+  register: nginxSslCert

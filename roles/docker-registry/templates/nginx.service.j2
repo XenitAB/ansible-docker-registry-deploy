@@ -1,0 +1,16 @@
+[Unit]
+Description={{ nginxContainerName }}
+After=docker.service network.target
+Requires=docker.service network.target
+ 
+[Service]
+Restart=always
+RestartSec=10s
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill {{ nginxContainerName }}
+ExecStartPre=-/usr/bin/docker rm {{ nginxContainerName }}
+ExecStartPre=/usr/bin/docker pull nginx:latest
+ExecStart=/usr/bin/docker run --network={{ dockerNetworkName }} --name {{ nginxContainerName }} -p 80:80 -p 443:443 -v /etc/nginx:/etc/nginx:ro nginx:latest
+ 
+[Install]
+WantedBy=multi-user.target

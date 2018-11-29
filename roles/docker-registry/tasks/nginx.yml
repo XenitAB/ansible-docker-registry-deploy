@@ -1,0 +1,67 @@
+- name: Create nginx directory
+  file:
+    path: /etc/nginx
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+    recurse: yes
+
+- name: Create nginx service file
+  template:
+    src: nginx.service.j2
+    dest: "/etc/systemd/system/{{ nginxContainerName }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  register: nginxServiceFile
+
+- name: Create nginx.conf
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: 0644
+  register: nginxConfFile
+
+- name: Set fact for NGINX_CERT and NGINX_KEY if they are base64 encoded
+  set_fact:
+    NGINX_CERT: "{{ NGINX_CERT_B64 | b64decode }}"
+    NGINX_KEY: "{{ NGINX_KEY_B64 | b64decode }}"
+  when: NGINX_CERT_B64 is defined and NGINX_KEY_B64
+
+- name: Set fact for selfsignCertificate if NGINX_CERT and NGINX_KEY variables exist
+  set_fact:
+    selfsignCertificate: false
+  when: NGINX_CERT is defined and NGINX_KEY is defined
+
+- name: Set fact for selfsignCertificate if NGINX_CERT or NGINX_KEY variables doesn't exist
+  set_fact:
+    selfsignCertificate: true
+  when: NGINX_CERT is undefined or NGINX_KEY is undefined
+
+- name: Include nginx selfsigned cert if no cert is imported
+  include_tasks: nginx_selfsigned_cert.yml
+  when: selfsignCertificate
+
+- name: Include nginx import cert
+  include_tasks: nginx_import_cert.yml
+  when: selfsignCertificate == false
+
+- name: Enable nginx service
+  service:
+    daemon_reload: yes
+    name: "{{ nginxContainerName }}"
+    state: started
+    enabled: yes
+  register: nginxService
+
+- name: Restart nginx service if changed
+  service:
+    daemon_reload: yes
+    name: "{{ nginxContainerName }}"
+    state: restarted
+  when:
+  - nginxService.changed == false
+  - nginxServiceFile.changed or nginxConfFile.changed or nginxSslCert.changed

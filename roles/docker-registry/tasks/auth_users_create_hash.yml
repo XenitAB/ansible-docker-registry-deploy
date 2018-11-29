@@ -1,0 +1,57 @@
+- name: Delete password files if they exists
+  delegate_to: localhost
+  file:
+    state: absent
+    path: "/tmp/{{ item.name }}"
+  loop: "{{ authUsers }}"
+
+- name: Fetch password files if they exists
+  fetch:
+    fail_on_missing: no
+    flat: yes
+    src: "{{ authDirectory }}/{{ item.name }}"
+    dest: "/tmp/{{ item.name }}"
+  loop: "{{ authUsers }}"
+
+- name: Set fact for user passwords
+  set_fact:
+    authUserPasswords: "{{ authUserPasswords | default([]) + [ (item | combine({'password': password})) ]}}"
+  vars:
+    password: "{{ lookup('password', '/tmp/' + item.name + ' chars=ascii_letters,digits') }}"
+  loop: "{{ authUsers }}"
+
+- name: Copy password files to remote
+  copy:
+    src: "/tmp/{{ item.name }}"
+    dest: "{{ authDirectory }}/{{ item.name }}"
+  loop: "{{ authUsers }}"
+
+- name: Delete password files
+  delegate_to: localhost
+  file:
+    state: absent
+    path: "/tmp/{{ item.name }}"
+  loop: "{{ authUsers }}"
+
+- name: Hash passwords
+  no_log: true
+  command: "python -c 'import bcrypt; print(bcrypt.hashpw(\"{{ item.password }}\", bcrypt.gensalt()))'"
+  register: hashPasswords
+  loop: "{{ authUserPasswords }}"
+
+- name: Set fact for user hash passwords
+  no_log: true
+  set_fact:
+    authUserHashPasswords: "{{ authUserHashPasswords | default([]) + [ (item | combine({'hashPassword': hashPassword})) ]}}"
+  vars:
+    hashPassword: "{{ hashPasswords.results[loopIndex].stdout }}"
+  loop: "{{ authUserPasswords }}"
+  loop_control:
+    index_var: loopIndex
+
+- name: Create password hash files
+  no_log: true
+  copy:
+    dest: "{{ authDirectory }}/{{ item.name }}_hash"
+    content: "{{ item.hashPassword }}"
+  loop: "{{ authUserHashPasswords }}"

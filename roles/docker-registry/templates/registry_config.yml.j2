@@ -1,0 +1,30 @@
+version: 0.1
+storage:
+{% if azureStorage is undefined %}
+  filesystem:
+    rootdirectory: {{ registryStorageLocation }}
+    maxthreads: 100
+{% else %}
+  azure:
+    accountname: {{ azureStorage.accountName }}
+    accountkey: {{ azureStorage.accountKey }}
+    container: {{ registryContainerName }}-{{ environmentShort }}
+  redirect:
+    disable: true
+{% endif %}
+  delete:
+    enabled: true
+auth:
+  token:
+    realm: https://{{ nginxConfig.fqdn }}/auth
+    service: https://{{ nginxConfig.fqdn }}
+    issuer: {{ environmentShort }}
+    rootcertbundle: /auth_config/auth.crt
+http:
+  addr: :5000
+  host: https://{{ nginxConfig.fqdn }}
+  secret: {{ registryHttpSecret }}
+  headers:
+    X-Content-Type-Options: [nosniff]
+  http2:
+    disabled: false

@@ -1,0 +1,8 @@
+environmentShort: dev
+nginxConfig:
+  fqdn: registry-dev.example.com
+  country_name: SE
+  state_or_province_name: Vastra Gotaland
+  locality_name: Gothenburg
+  organization_name: Example Org
+  organizational_unit_name: IT

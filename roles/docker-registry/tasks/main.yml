@@ -1,0 +1,11 @@
+- name: Include docker management task
+  include_tasks: docker.yml
+
+- name: Include registry management task
+  include_tasks: registry.yml
+
+- name: Include auth management task
+  include_tasks: auth.yml
+
+- name: Include nginx management task
+  include_tasks: nginx.yml

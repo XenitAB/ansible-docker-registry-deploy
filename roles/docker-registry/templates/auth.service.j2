@@ -1,0 +1,16 @@
+[Unit]
+Description={{ authContainerName }}
+After=docker.service network.target
+Requires=docker.service network.target
+ 
+[Service]
+Restart=always
+RestartSec=10s
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill {{ authContainerName }}
+ExecStartPre=-/usr/bin/docker rm {{ authContainerName }}
+ExecStartPre=/usr/bin/docker pull cesanta/docker_auth:1
+ExecStart=/usr/bin/docker run --network={{ dockerNetworkName }} --name {{ authContainerName }} -v {{ authDirectory }}:/config:ro -v /var/log/{{ authContainerName }}:/logs cesanta/docker_auth:1
+ 
+[Install]
+WantedBy=multi-user.target

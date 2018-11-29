@@ -1,0 +1,38 @@
+- name: Install dependencies
+  pip:
+    name: "{{ item }}"
+    state: latest
+  loop:
+  - passlib
+  - bcrypt
+
+- name: Set fact for user names
+  set_fact:
+    authUsers: "{{ authUsers | default([]) + [ (item | combine({'name': name})) ]}}"
+  vars:
+    name: "{{ environmentShort }}-{{ item.nameSuffix }}"
+  loop: "{{ confAuthUsers }}"
+
+- name: Stat user hashed password files
+  stat:
+    path: "{{ authDirectory }}/{{ item.name }}_hash"
+  loop: "{{ authUsers }}"
+  register: hashFiles
+
+- name: Set createHash to false
+  set_fact:
+    createHash: false
+
+- name: Set createHash to true if any of the files are missing
+  set_fact:
+    createHash: true
+  loop: "{{ hashFiles.results }}"
+  when: item.stat.exists == false
+
+- name: Create users password hashes if they don't exist
+  include_tasks: auth_users_create_hash.yml
+  when: createHash == true
+
+- name: Create users password hashes if they don't exist
+  include_tasks: auth_users_import_hash.yml
+  when: createHash == false

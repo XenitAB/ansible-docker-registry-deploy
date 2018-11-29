@@ -1,0 +1,13 @@
+- name: Import key
+  no_log: true
+  copy:
+    content: "{{ NGINX_KEY }}"
+    dest: "/etc/nginx/nginx.key"
+  register: nginxSslKey
+
+- name: Import certificate
+  no_log: true
+  copy:
+    content: "{{ NGINX_CERT }}"
+    dest: "/etc/nginx/nginx.crt"
+  register: nginxSslCert

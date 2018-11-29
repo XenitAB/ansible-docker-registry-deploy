@@ -1,0 +1,26 @@
+location: west europe
+locationShort: we
+rgCommonName: registry
+nodeName: reg
+sshUsername: <username>
+sshPublicKey: <ssh public key>
+
+dockerNetworkName: registry
+registryContainerName: registry
+registryStorageLocation: /var/lib/docker_registry
+registryStorageAccountCommonName: registrystorage
+registryConfigLocation: /etc/registry
+nginxContainerName: nginx
+authContainerName: auth
+authDirectory: "/etc/auth"
+confAuthUsers:
+-
+  nameSuffix: rw
+  comment: read/write to everything.
+  actions:
+  - "*"
+-
+  nameSuffix: ro
+  comment: read only to everything.
+  actions:
+  - "pull"
